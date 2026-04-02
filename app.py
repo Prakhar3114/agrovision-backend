@@ -1,13 +1,19 @@
 from flask import Flask, request, jsonify
-import tensorflow as tf
 import numpy as np
 from PIL import Image
 import os
 
 app = Flask(__name__)
 
-# Load trained model once at startup
-model = tf.keras.models.load_model("plant_disease_model.keras")
+# Lazy loading — model loads on first request, not at startup
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        import tensorflow as tf
+        model = tf.keras.models.load_model("plant_disease_model.keras")
+    return model
 
 CONFIDENCE_THRESHOLD = 75
 
@@ -87,7 +93,10 @@ def predict():
         image = Image.open(file).convert("RGB")
         processed_image = preprocess_image(image)
 
-        prediction = model.predict(processed_image)
+        # Load model lazily
+        m = get_model()
+
+        prediction = m.predict(processed_image)
         predicted_index = np.argmax(prediction)
         predicted_class = class_names[predicted_index]
         confidence = float(np.max(prediction)) * 100
@@ -116,6 +125,5 @@ def predict():
 
 
 if __name__ == "__main__":
-    # Render injects PORT automatically
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=False, host="0.0.0.0", port=port)

@@ -15,7 +15,8 @@ _interpreter = None
 def get_interpreter():
     global _interpreter
     if _interpreter is None:
-        import tflite_runtime.interpreter as tflite
+        import tensorflow as tf
+        tflite = tf.lite
         _interpreter = tflite.Interpreter(model_path="plant_disease_model.tflite")
         _interpreter.allocate_tensors()
     return _interpreter
